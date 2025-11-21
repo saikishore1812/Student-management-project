@@ -1,47 +1,71 @@
-    import { Request, Response } from "express";
-    import fs from "fs";
-    import path from "path";
+import { Request, Response } from "express";
+import pool from "../db";
 
-    const filePath = path.join(__dirname, "../data/students.json");
+// GET all students
+export const getStudents = async (req: Request, res: Response) => {
+  try {
+    const [rows] = await pool.query("SELECT * FROM students");
+    res.json(rows);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching students" });
+  }
+};
 
-    // Helper to read/write JSON
-    const readData = () => JSON.parse(fs.readFileSync(filePath, "utf8"));
-    const writeData = (data: any) => fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+// ADD a new student
+export const addStudent = async (req: Request, res: Response) => {
+  const { name, age, gender, course, email } = req.body;
 
-    export const getStudents = (req: Request, res: Response) => {
-    const students = readData();
-    res.json(students);
-    };
-
-    export const addStudent = (req: Request, res: Response) => {
-    const students = readData();
-    const newStudent = {
-        id: Date.now(),
-        ...req.body
-    };
-    students.push(newStudent);
-    writeData(students);
-    res.json(newStudent);
-    };
-
-    export const updateStudent = (req: Request, res: Response) => {
-    const students = readData();
-    const id = Number(req.params.id);
-
-    const updatedStudents = students.map((s: any) =>
-        s.id === id ? { ...s, ...req.body } : s
+  try {
+    const [result]: any = await pool.query(
+      "INSERT INTO students (name, age, gender, course, email) VALUES (?, ?, ?, ?, ?)",
+      [name, age, gender, course, email]
     );
 
-    writeData(updatedStudents);
-    res.json(updatedStudents.find((s: any) => s.id === id));
-    };
+    res.json({
+      id: result.insertId,
+      name,
+      age,
+      gender,
+      course,
+      email,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Error adding student" });
+  }
+};
 
-    export const deleteStudent = (req: Request, res: Response) => {
-    const students = readData();
-    const id = Number(req.params.id);
+// UPDATE student
+export const updateStudent = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { name, age, gender, course, email } = req.body;
 
-    const filtered = students.filter((s: any) => s.id !== id);
-    writeData(filtered);
+  try {
+    await pool.query(
+      "UPDATE students SET name=?, age=?, gender=?, course=?, email=? WHERE id=?",
+      [name, age, gender, course, email, id]
+    );
 
-    res.json({ success: true });
-    };
+    res.json({
+      id,
+      name,
+      age,
+      gender,
+      course,
+      email,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Error updating student" });
+  }
+};
+
+// DELETE student
+export const deleteStudent = async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  try {
+    await pool.query("DELETE FROM students WHERE id=?", [id]);
+    res.json({ message: "Student deleted" });
+  } catch (error) {
+    res.status(500).json({ message: "Error deleting student" });
+  }
+};
