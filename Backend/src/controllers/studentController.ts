@@ -46,7 +46,7 @@ export const updateStudent = async (req: Request, res: Response) => {
     );
 
     res.json({
-      id,
+      id: Number(id),
       name,
       age,
       gender,
@@ -67,5 +67,5 @@ export const deleteStudent = async (req: Request, res: Response) => {
     res.json({ message: "Student deleted" });
   } catch (error) {
     res.status(500).json({ message: "Error deleting student" });
-  }
+  }   
 };
